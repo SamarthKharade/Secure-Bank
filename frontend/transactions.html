@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SecureBank — Transactions</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --navy: #06112A; --royal: #0D2554; --blue: #1845A7; --accent: #3B82F6;
+      --gold: #C9973A; --gold-light: #F1C05A; --white: #F8FAFF; --muted: #64748B;
+      --text: #CBD5E1; --error: #EF4444; --success: #22C55E;
+      --border: rgba(59,130,246,0.15); --card: rgba(13,37,84,0.5); --sidebar-w: 240px;
+    }
+    body { font-family: 'DM Sans', sans-serif; background: var(--navy); color: var(--text); min-height: 100vh; display: flex; }
+
+    /* SIDEBAR (shared) */
+    .sidebar { width: var(--sidebar-w); background: linear-gradient(180deg, #08173F 0%, #060F29 100%); border-right: 1px solid var(--border); display: flex; flex-direction: column; position: fixed; top: 0; left: 0; bottom: 0; z-index: 100; }
+    .sidebar-logo { padding: 28px 24px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid var(--border); }
+    .logo-icon { width: 38px; height: 38px; background: linear-gradient(135deg, var(--gold), var(--gold-light)); border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+    .logo-name { font-family: 'Playfair Display', serif; font-size: 18px; color: var(--white); }
+    .sidebar-nav { flex: 1; padding: 20px 14px; display: flex; flex-direction: column; gap: 4px; }
+    .nav-section-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.2px; color: #3D5070; padding: 14px 10px 8px; }
+    .nav-item { display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: 10px; font-size: 14px; font-weight: 500; color: #607090; cursor: pointer; transition: all 0.2s; text-decoration: none; }
+    .nav-item:hover { background: rgba(59,130,246,0.08); color: var(--text); }
+    .nav-item.active { background: rgba(59,130,246,0.14); color: var(--accent); }
+    .nav-icon { font-size: 17px; width: 20px; text-align: center; }
+    .sidebar-user { padding: 16px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
+    .user-avatar { width: 38px; height: 38px; background: linear-gradient(135deg, var(--blue), var(--accent)); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 700; color: white; flex-shrink: 0; }
+    .user-info { flex: 1; min-width: 0; }
+    .user-name { font-size: 13px; font-weight: 600; color: var(--white); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .user-role { font-size: 11px; color: var(--muted); }
+    .logout-btn { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 16px; }
+    .logout-btn:hover { color: var(--error); }
+
+    .main { margin-left: var(--sidebar-w); flex: 1; }
+    .topbar { background: rgba(6,17,42,0.9); border-bottom: 1px solid var(--border); padding: 18px 32px; display: flex; align-items: center; justify-content: space-between; backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 50; }
+    .page-title { font-family: 'Playfair Display', serif; font-size: 22px; color: var(--white); }
+    .content { padding: 32px; }
+
+    /* Stats bar */
+    .stats-bar {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: 16px; margin-bottom: 24px;
+    }
+    .stat-pill {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 18px 20px;
+      animation: slideUp 0.4s ease forwards; opacity: 0;
+    }
+    .stat-pill:nth-child(1) { animation-delay: 0s; }
+    .stat-pill:nth-child(2) { animation-delay: 0.08s; }
+    .stat-pill:nth-child(3) { animation-delay: 0.16s; }
+    .stat-pill:nth-child(4) { animation-delay: 0.24s; }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+    .stat-pill-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); margin-bottom: 8px; }
+    .stat-pill-value { font-family: 'Playfair Display', serif; font-size: 22px; color: var(--white); }
+    .stat-pill-value.green { color: var(--success); }
+    .stat-pill-value.red { color: var(--error); }
+    .stat-pill-value.gold { color: var(--gold-light); }
+
+    /* Filters */
+    .filters-bar {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 18px 24px;
+      display: flex; align-items: center; gap: 16px;
+      margin-bottom: 20px; flex-wrap: wrap;
+    }
+    .filter-group { display: flex; align-items: center; gap: 8px; }
+    .filter-label { font-size: 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; }
+    .filter-select, .filter-input {
+      background: rgba(6,17,42,0.8); border: 1px solid var(--border);
+      border-radius: 8px; padding: 8px 14px; font-family: 'DM Sans', sans-serif;
+      font-size: 13px; color: var(--text); outline: none; cursor: pointer;
+      transition: border-color 0.2s;
+    }
+    .filter-select:focus, .filter-input:focus { border-color: var(--accent); }
+    .filter-select option { background: #0A1E4A; }
+    .btn-filter {
+      padding: 8px 18px; background: var(--blue);
+      border: none; border-radius: 8px; color: white;
+      font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .btn-filter:hover { background: #2055CC; }
+    .btn-spending {
+      margin-left: auto; padding: 8px 18px;
+      background: rgba(201,151,58,0.1); border: 1px solid rgba(201,151,58,0.3);
+      border-radius: 8px; color: var(--gold-light); font-family: 'DM Sans', sans-serif;
+      font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;
+    }
+    .btn-spending:hover { background: rgba(201,151,58,0.2); }
+
+    /* Table */
+    .txn-table-wrap {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 16px; overflow: hidden;
+    }
+    .txn-table { width: 100%; border-collapse: collapse; }
+    .txn-table thead th {
+      padding: 14px 20px; text-align: left; font-size: 11px;
+      font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px;
+      color: var(--muted); background: rgba(6,17,42,0.6);
+      border-bottom: 1px solid var(--border);
+    }
+    .txn-table tbody tr {
+      border-bottom: 1px solid rgba(59,130,246,0.07);
+      transition: background 0.15s;
+      animation: rowIn 0.3s ease forwards; opacity: 0;
+    }
+    .txn-table tbody tr:hover { background: rgba(59,130,246,0.05); }
+    .txn-table tbody tr:last-child { border-bottom: none; }
+    @keyframes rowIn { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: translateX(0); } }
+
+    .txn-table td { padding: 14px 20px; font-size: 14px; }
+
+    .type-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600;
+    }
+    .type-badge.credit { background: rgba(34,197,94,0.1); color: var(--success); }
+    .type-badge.debit { background: rgba(239,68,68,0.1); color: var(--error); }
+
+    .amount-cell { font-weight: 600; }
+    .amount-cell.credit { color: var(--success); }
+    .amount-cell.debit { color: var(--error); }
+
+    .fraud-chip {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 11px; padding: 3px 8px; border-radius: 5px;
+      background: rgba(245,158,11,0.12); color: #FBBF24; font-weight: 600;
+    }
+
+    .score-bar {
+      display: flex; align-items: center; gap: 8px; font-size: 12px;
+    }
+    .score-track {
+      flex: 1; height: 4px; background: rgba(255,255,255,0.08);
+      border-radius: 2px; overflow: hidden; min-width: 60px;
+    }
+    .score-fill { height: 100%; border-radius: 2px; transition: width 0.6s; }
+
+    /* Pagination */
+    .pagination {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 20px; border-top: 1px solid var(--border);
+    }
+    .pag-info { font-size: 13px; color: var(--muted); }
+    .pag-btns { display: flex; gap: 8px; }
+    .pag-btn {
+      padding: 7px 16px; background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border); border-radius: 8px;
+      color: var(--text); font-size: 13px; cursor: pointer; transition: all 0.2s;
+    }
+    .pag-btn:hover:not(:disabled) { background: rgba(59,130,246,0.15); border-color: var(--accent); }
+    .pag-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+    .pag-btn.active { background: var(--blue); border-color: var(--blue); color: white; }
+
+    /* Spending Modal */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); z-index: 200; display: none; align-items: center; justify-content: center; }
+    .modal-overlay.open { display: flex; }
+    .modal { background: #0A1E4A; border: 1px solid var(--border); border-radius: 18px; padding: 36px; width: 520px; max-height: 80vh; overflow-y: auto; animation: modalIn 0.3s ease; }
+    @keyframes modalIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+    .modal h3 { font-family: 'Playfair Display', serif; font-size: 22px; color: var(--white); margin-bottom: 6px; }
+    .modal-sub { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+    .cat-row { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+    .cat-name { width: 120px; font-size: 14px; color: var(--text); text-transform: capitalize; }
+    .cat-bar-wrap { flex: 1; height: 8px; background: rgba(255,255,255,0.07); border-radius: 4px; overflow: hidden; }
+    .cat-bar { height: 100%; border-radius: 4px; }
+    .cat-pct { font-size: 12px; color: var(--muted); width: 40px; text-align: right; }
+    .cat-amount { font-size: 13px; font-weight: 600; color: var(--white); width: 80px; text-align: right; }
+    .btn-close { margin-top: 20px; width: 100%; padding: 12px; background: rgba(255,255,255,0.07); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; cursor: pointer; transition: all 0.2s; }
+    .btn-close:hover { background: rgba(255,255,255,0.12); }
+
+    .toast { position: fixed; top: 24px; right: 24px; padding: 14px 20px; border-radius: 10px; font-size: 14px; font-weight: 500; z-index: 999; transform: translateX(120%); transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
+    .toast.show { transform: translateX(0); }
+    .toast.success { background: #052E16; border: 1px solid #166534; color: #86EFAC; }
+    .toast.error { background: #2A0A0A; border: 1px solid #7F1D1D; color: #FCA5A5; }
+
+    .empty-state { padding: 60px 20px; text-align: center; color: var(--muted); font-size: 15px; }
+  </style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<!-- Spending Modal -->
+<div class="modal-overlay" id="spendingModal">
+  <div class="modal">
+    <h3>📊 Spending Analysis</h3>
+    <p class="modal-sub">Last 90 days · AI-categorized breakdown</p>
+    <div id="spendingContent">Loading...</div>
+    <button class="btn-close" onclick="document.getElementById('spendingModal').classList.remove('open')">Close</button>
+  </div>
+</div>
+
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">🏦</div>
+    <span class="logo-name">SecureBank</span>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Main</div>
+    <a class="nav-item" href="/dashboard"><span class="nav-icon">🏠</span> Dashboard</a>
+    <a class="nav-item active" href="/transactions"><span class="nav-icon">📋</span> Transactions</a>
+  </nav>
+  <div class="sidebar-user">
+    <div class="user-avatar" id="avatarLetter">–</div>
+    <div class="user-info">
+      <div class="user-name" id="sidebarName">Loading...</div>
+      <div class="user-role">Account Holder</div>
+    </div>
+    <button class="logout-btn" onclick="logout()">⏻</button>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="topbar">
+    <div class="page-title">Transactions</div>
+  </div>
+  <div class="content">
+
+    <!-- Stats Bar -->
+    <div class="stats-bar">
+      <div class="stat-pill">
+        <div class="stat-pill-label">Total Transactions</div>
+        <div class="stat-pill-value" id="statTotal">–</div>
+      </div>
+      <div class="stat-pill">
+        <div class="stat-pill-label">Total Credits</div>
+        <div class="stat-pill-value green" id="statCredits">–</div>
+      </div>
+      <div class="stat-pill">
+        <div class="stat-pill-label">Total Debits</div>
+        <div class="stat-pill-value red" id="statDebits">–</div>
+      </div>
+      <div class="stat-pill">
+        <div class="stat-pill-label">Flagged</div>
+        <div class="stat-pill-value gold" id="statFlagged">–</div>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters-bar">
+      <div class="filter-group">
+        <span class="filter-label">Type</span>
+        <select class="filter-select" id="filterType">
+          <option value="">All</option>
+          <option value="credit">Credit</option>
+          <option value="debit">Debit</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <span class="filter-label">Status</span>
+        <select class="filter-select" id="filterFlagged">
+          <option value="">All</option>
+          <option value="true">Flagged only</option>
+          <option value="false">Clean only</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <span class="filter-label">Search</span>
+        <input class="filter-input" id="filterSearch" placeholder="Search description..." style="width:200px;"/>
+      </div>
+      <button class="btn-filter" onclick="applyFilters()">Apply</button>
+      <button class="btn-spending" onclick="loadSpending()">📊 Spending Analysis</button>
+    </div>
+
+    <!-- Table -->
+    <div class="txn-table-wrap">
+      <table class="txn-table">
+        <thead>
+          <tr>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Amount</th>
+            <th>Balance After</th>
+            <th>Fraud Score</th>
+            <th>Date & Time</th>
+          </tr>
+        </thead>
+        <tbody id="txnTableBody">
+          <tr><td colspan="6"><div class="empty-state">Loading transactions...</div></td></tr>
+        </tbody>
+      </table>
+      <div class="pagination" id="pagination" style="display:none">
+        <span class="pag-info" id="pagInfo"></span>
+        <div class="pag-btns" id="pagBtns"></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+  const API = window.location.origin + '/api/v1';
+  const token = localStorage.getItem('token');
+  if (!token) window.location.href = '/login';
+  const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
+
+  let allTxns = [], currentPage = 1, totalPages = 1;
+  const LIMIT = 15;
+
+  function showToast(msg, type = 'success') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = `toast ${type} show`;
+    setTimeout(() => t.classList.remove('show'), 3500);
+  }
+
+  function logout() { localStorage.clear(); window.location.href = '/login'; }
+
+  function formatCurrency(n) {
+    return Number(n).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function formatDate(d) {
+    return new Date(d).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  }
+
+  function getScoreColor(score) {
+    if (score < 0.3) return '#22C55E';
+    if (score < 0.6) return '#F59E0B';
+    return '#EF4444';
+  }
+
+  async function loadProfile() {
+    try {
+      const res = await fetch(`${API}/user/profile`, { headers });
+      const data = await res.json();
+      document.getElementById('sidebarName').textContent = data.name;
+      document.getElementById('avatarLetter').textContent = data.name[0].toUpperCase();
+    } catch(e) {}
+  }
+
+  async function loadTransactions(page = 1) {
+    try {
+      const res = await fetch(`${API}/user/transactions?page=${page}&limit=${LIMIT}`, { headers });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+
+      allTxns = data.transactions;
+      totalPages = data.pages;
+      currentPage = data.page;
+
+      computeStats(data.transactions);
+      renderTable(data.transactions);
+      renderPagination(data.total, data.page, data.pages);
+    } catch(e) {
+      showToast('Failed to load transactions', 'error');
+    }
+  }
+
+  function computeStats(txns) {
+    document.getElementById('statTotal').textContent = txns.length;
+    const credits = txns.filter(t => t.type === 'credit').reduce((s, t) => s + t.amount, 0);
+    const debits = txns.filter(t => t.type === 'debit').reduce((s, t) => s + t.amount, 0);
+    const flagged = txns.filter(t => t.is_flagged).length;
+    document.getElementById('statCredits').textContent = '₹' + formatCurrency(credits);
+    document.getElementById('statDebits').textContent = '₹' + formatCurrency(debits);
+    document.getElementById('statFlagged').textContent = flagged;
+  }
+
+  function renderTable(txns) {
+    const tbody = document.getElementById('txnTableBody');
+    if (!txns.length) {
+      tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state">No transactions found</div></td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = txns.map((t, i) => {
+      const isCredit = t.type === 'credit';
+      const score = t.fraud_score || 0;
+      const scoreColor = getScoreColor(score);
+      const delay = i * 0.04;
+
+      return `
+        <tr style="animation-delay:${delay}s">
+          <td>
+            <span class="type-badge ${t.type}">
+              ${isCredit ? '📥' : '📤'} ${t.type.charAt(0).toUpperCase() + t.type.slice(1)}
+            </span>
+          </td>
+          <td>
+            <div style="font-size:14px; color:var(--white); max-width:250px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+              ${t.description || '–'}
+            </div>
+            ${t.is_flagged ? '<span class="fraud-chip">⚠ Flagged</span>' : ''}
+          </td>
+          <td class="amount-cell ${t.type}">
+            ${isCredit ? '+' : '–'}₹${formatCurrency(t.amount)}
+          </td>
+          <td style="color:var(--text);">₹${formatCurrency(t.balance_after)}</td>
+          <td>
+            <div class="score-bar">
+              <div class="score-track">
+                <div class="score-fill" style="width:${score * 100}%; background:${scoreColor};"></div>
+              </div>
+              <span style="font-size:12px; color:${scoreColor}; font-weight:600;">${(score * 100).toFixed(0)}%</span>
+            </div>
+          </td>
+          <td style="color:var(--muted); font-size:13px; white-space:nowrap;">${formatDate(t.timestamp)}</td>
+        </tr>`;
+    }).join('');
+  }
+
+  function renderPagination(total, page, pages) {
+    const pag = document.getElementById('pagination');
+    const info = document.getElementById('pagInfo');
+    const btns = document.getElementById('pagBtns');
+
+    if (pages <= 1) { pag.style.display = 'none'; return; }
+    pag.style.display = 'flex';
+    info.textContent = `Page ${page} of ${pages} · ${total} total`;
+
+    let html = `<button class="pag-btn" onclick="loadTransactions(${page-1})" ${page === 1 ? 'disabled' : ''}>← Prev</button>`;
+
+    const start = Math.max(1, page - 2);
+    const end = Math.min(pages, start + 4);
+    for (let p = start; p <= end; p++) {
+      html += `<button class="pag-btn ${p === page ? 'active' : ''}" onclick="loadTransactions(${p})">${p}</button>`;
+    }
+
+    html += `<button class="pag-btn" onclick="loadTransactions(${page+1})" ${page === pages ? 'disabled' : ''}>Next →</button>`;
+    btns.innerHTML = html;
+  }
+
+  function applyFilters() {
+    const type = document.getElementById('filterType').value;
+    const flagged = document.getElementById('filterFlagged').value;
+    const search = document.getElementById('filterSearch').value.toLowerCase();
+
+    let filtered = [...allTxns];
+    if (type) filtered = filtered.filter(t => t.type === type);
+    if (flagged === 'true') filtered = filtered.filter(t => t.is_flagged);
+    if (flagged === 'false') filtered = filtered.filter(t => !t.is_flagged);
+    if (search) filtered = filtered.filter(t => (t.description || '').toLowerCase().includes(search));
+
+    computeStats(filtered);
+    renderTable(filtered);
+  }
+
+  async function loadSpending() {
+    document.getElementById('spendingModal').classList.add('open');
+    document.getElementById('spendingContent').innerHTML = '<div style="text-align:center; padding:20px; color:var(--muted);">Loading...</div>';
+
+    try {
+      const res = await fetch(`${API}/ml/spending-analysis?days=90`, { headers });
+      const data = await res.json();
+
+      if (!data.analysis) {
+        document.getElementById('spendingContent').innerHTML = '<p style="color:var(--muted)">Not enough transaction data yet.</p>';
+        return;
+      }
+
+      const analysis = data.analysis;
+      const catColors = {
+        food: '#F59E0B', transport: '#3B82F6', shopping: '#A855F7',
+        utilities: '#14B8A6', entertainment: '#EC4899', medical: '#22C55E',
+        education: '#F97316', transfer: '#64748B', other: '#94A3B8'
+      };
+
+      let html = `
+        <div style="margin-bottom:20px; padding:16px; background:rgba(6,17,42,0.6); border-radius:10px; border:1px solid var(--border);">
+          <div style="font-size:12px; color:var(--muted); margin-bottom:4px;">Total Spent</div>
+          <div style="font-family:'Playfair Display',serif; font-size:28px; color:var(--white);">₹${Number(analysis.total_spent).toLocaleString('en-IN')}</div>
+          <div style="font-size:13px; color:var(--muted);">${analysis.transaction_count} transactions · Top: <span style="color:var(--gold-light); text-transform:capitalize;">${analysis.top_category}</span></div>
+        </div>`;
+
+      for (const [cat, info] of Object.entries(analysis.category_breakdown)) {
+        const color = catColors[cat] || '#94A3B8';
+        html += `
+          <div class="cat-row">
+            <span class="cat-name">${cat}</span>
+            <div class="cat-bar-wrap"><div class="cat-bar" style="width:${info.percentage}%; background:${color};"></div></div>
+            <span class="cat-pct">${info.percentage}%</span>
+            <span class="cat-amount">₹${Number(info.total).toLocaleString('en-IN')}</span>
+          </div>`;
+      }
+
+      document.getElementById('spendingContent').innerHTML = html;
+    } catch(e) {
+      document.getElementById('spendingContent').innerHTML = '<p style="color:var(--error)">Failed to load analysis</p>';
+    }
+  }
+
+  document.getElementById('spendingModal').addEventListener('click', e => {
+    if (e.target === document.getElementById('spendingModal')) {
+      document.getElementById('spendingModal').classList.remove('open');
+    }
+  });
+
+  loadProfile();
+  loadTransactions(1);
+</script>
+</body>
+</html>

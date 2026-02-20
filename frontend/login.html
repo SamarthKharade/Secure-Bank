@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SecureBank — Login</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy: #06112A;
+      --royal: #0D2554;
+      --blue: #1845A7;
+      --accent: #3B82F6;
+      --gold: #C9973A;
+      --gold-light: #F1C05A;
+      --white: #F8FAFF;
+      --muted: #94A3B8;
+      --error: #EF4444;
+      --success: #22C55E;
+      --border: rgba(59,130,246,0.18);
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--navy);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Animated background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 20% 10%, rgba(24,69,167,0.35) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 50% at 80% 90%, rgba(13,37,84,0.5) 0%, transparent 55%),
+        radial-gradient(ellipse 40% 40% at 60% 30%, rgba(201,151,58,0.07) 0%, transparent 50%);
+      z-index: 0;
+    }
+
+    /* Floating grid lines */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(59,130,246,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(59,130,246,0.04) 1px, transparent 1px);
+      background-size: 60px 60px;
+      z-index: 0;
+    }
+
+    .page-wrap {
+      display: flex;
+      width: 100%;
+      max-width: 1100px;
+      min-height: 600px;
+      position: relative;
+      z-index: 1;
+      padding: 20px;
+      gap: 0;
+      animation: fadeIn 0.8s ease forwards;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Left branding panel */
+    .brand-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 60px 50px;
+      background: linear-gradient(135deg, var(--royal) 0%, #0A1E4A 100%);
+      border-radius: 20px 0 0 20px;
+      border: 1px solid var(--border);
+      border-right: none;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .brand-panel::before {
+      content: '';
+      position: absolute;
+      top: -80px; right: -80px;
+      width: 280px; height: 280px;
+      border-radius: 50%;
+      border: 1px solid rgba(201,151,58,0.15);
+    }
+    .brand-panel::after {
+      content: '';
+      position: absolute;
+      bottom: -60px; left: -60px;
+      width: 220px; height: 220px;
+      border-radius: 50%;
+      border: 1px solid rgba(59,130,246,0.15);
+    }
+
+    .brand-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 60px;
+    }
+
+    .logo-icon {
+      width: 44px; height: 44px;
+      background: linear-gradient(135deg, var(--gold), var(--gold-light));
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+      box-shadow: 0 4px 20px rgba(201,151,58,0.3);
+    }
+
+    .logo-text {
+      font-family: 'Playfair Display', serif;
+      font-size: 22px;
+      color: var(--white);
+      letter-spacing: 0.5px;
+    }
+
+    .brand-headline {
+      font-family: 'Playfair Display', serif;
+      font-size: 38px;
+      line-height: 1.25;
+      color: var(--white);
+      margin-bottom: 20px;
+    }
+
+    .brand-headline span {
+      color: var(--gold-light);
+    }
+
+    .brand-sub {
+      font-size: 15px;
+      color: var(--muted);
+      line-height: 1.7;
+      margin-bottom: 50px;
+      max-width: 320px;
+    }
+
+    .brand-features {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .feature-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 14px;
+      color: #CBD5E1;
+    }
+
+    .feature-dot {
+      width: 8px; height: 8px;
+      background: var(--gold);
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* Right form panel */
+    .form-panel {
+      width: 440px;
+      background: rgba(8,20,50,0.95);
+      border-radius: 0 20px 20px 0;
+      border: 1px solid var(--border);
+      border-left: 1px solid rgba(59,130,246,0.08);
+      padding: 50px 44px;
+      display: flex;
+      flex-direction: column;
+      backdrop-filter: blur(20px);
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 0;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 36px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      background: none;
+      border: none;
+      padding: 14px 0;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--muted);
+      cursor: pointer;
+      position: relative;
+      transition: color 0.25s;
+    }
+
+    .tab-btn.active {
+      color: var(--white);
+    }
+
+    .tab-btn.active::after {
+      content: '';
+      position: absolute;
+      bottom: -1px; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent), var(--gold));
+      border-radius: 2px 2px 0 0;
+    }
+
+    .form-section { display: none; }
+    .form-section.active { display: block; animation: slideIn 0.3s ease; }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(10px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 26px;
+      color: var(--white);
+      margin-bottom: 8px;
+    }
+
+    .form-subtext {
+      font-size: 14px;
+      color: var(--muted);
+      margin-bottom: 28px;
+    }
+
+    .field {
+      margin-bottom: 18px;
+    }
+
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: #7A90B0;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 8px;
+    }
+
+    input {
+      width: 100%;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 13px 16px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      color: var(--white);
+      outline: none;
+      transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+    }
+
+    input::placeholder { color: #3D5070; }
+
+    input:focus {
+      border-color: var(--accent);
+      background: rgba(59,130,246,0.06);
+      box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+    }
+
+    input.error { border-color: var(--error); }
+
+    .field-error {
+      font-size: 12px;
+      color: var(--error);
+      margin-top: 5px;
+      display: none;
+    }
+
+    .btn-primary {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, var(--blue) 0%, #2563EB 100%);
+      border: none;
+      border-radius: 10px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      color: white;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: all 0.25s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #2055CC 0%, #1D4ED8 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 8px 25px rgba(37,99,235,0.35);
+    }
+
+    .btn-primary:active { transform: translateY(0); }
+
+    .btn-primary.loading::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+      animation: shimmer 1s infinite;
+    }
+
+    @keyframes shimmer {
+      from { transform: translateX(-100%); }
+      to { transform: translateX(100%); }
+    }
+
+    .divider {
+      text-align: center;
+      font-size: 12px;
+      color: var(--muted);
+      margin: 20px 0;
+      position: relative;
+    }
+
+    .divider::before, .divider::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      width: 38%;
+      height: 1px;
+      background: var(--border);
+    }
+    .divider::before { left: 0; }
+    .divider::after { right: 0; }
+
+    .toast {
+      position: fixed;
+      top: 24px; right: 24px;
+      padding: 14px 20px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 500;
+      z-index: 999;
+      transform: translateX(120%);
+      transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      max-width: 320px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .toast.show { transform: translateX(0); }
+    .toast.success { background: #052E16; border: 1px solid #166534; color: #86EFAC; }
+    .toast.error { background: #2A0A0A; border: 1px solid #7F1D1D; color: #FCA5A5; }
+
+    .secure-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 24px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border);
+    }
+
+    @media (max-width: 760px) {
+      .brand-panel { display: none; }
+      .form-panel { width: 100%; border-radius: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<div class="page-wrap">
+  <!-- Left brand panel -->
+  <div class="brand-panel">
+    <div class="brand-logo">
+      <div class="logo-icon">🏦</div>
+      <span class="logo-text">SecureBank</span>
+    </div>
+    <h1 class="brand-headline">Banking with<br><span>Your Consent</span><br>at the Core</h1>
+    <p class="brand-sub">A modern banking system where your privacy is protected — even from administrators. Every access request requires your explicit approval.</p>
+    <div class="brand-features">
+      <div class="feature-item"><div class="feature-dot"></div>Admin access requires your permission</div>
+      <div class="feature-item"><div class="feature-dot"></div>AI-powered fraud detection on every transaction</div>
+      <div class="feature-item"><div class="feature-dot"></div>Full audit trail of all account activity</div>
+      <div class="feature-item"><div class="feature-dot"></div>Time-limited access tokens (30 min expiry)</div>
+    </div>
+  </div>
+
+  <!-- Right form panel -->
+  <div class="form-panel">
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('login', this)">Sign In</button>
+      <button class="tab-btn" onclick="switchTab('register', this)">Create Account</button>
+    </div>
+
+    <!-- LOGIN FORM -->
+    <div class="form-section active" id="login">
+      <h2>Welcome back</h2>
+      <p class="form-subtext">Sign in to access your account securely.</p>
+
+      <div class="field">
+        <label>Email Address</label>
+        <input type="email" id="login-email" placeholder="you@example.com"/>
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input type="password" id="login-password" placeholder="••••••••"/>
+      </div>
+      <button class="btn-primary" onclick="handleLogin()">Sign In to SecureBank</button>
+
+      <div class="divider">or</div>
+      <p style="text-align:center; font-size:13px; color:var(--muted);">
+        Don't have an account?
+        <a href="#" onclick="switchTab('register', document.querySelectorAll('.tab-btn')[1])" style="color:var(--accent); text-decoration:none;">Create one</a>
+      </p>
+    </div>
+
+    <!-- REGISTER FORM -->
+    <div class="form-section" id="register">
+      <h2>Open Account</h2>
+      <p class="form-subtext">Join SecureBank in seconds.</p>
+
+      <div class="field">
+        <label>Full Name</label>
+        <input type="text" id="reg-name" placeholder="Rahul Sharma"/>
+      </div>
+      <div class="field">
+        <label>Email Address</label>
+        <input type="email" id="reg-email" placeholder="you@example.com"/>
+      </div>
+      <div class="field">
+        <label>Phone Number</label>
+        <input type="tel" id="reg-phone" placeholder="9876543210"/>
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input type="password" id="reg-password" placeholder="Min 8 characters"/>
+      </div>
+      <button class="btn-primary" onclick="handleRegister()">Create My Account</button>
+    </div>
+
+    <div class="secure-badge">
+      🔒 256-bit SSL encrypted · Your data is fully protected
+    </div>
+  </div>
+</div>
+
+<script>
+  const API = window.location.origin + '/api/v1';
+
+  function switchTab(id, btn) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.form-section').forEach(s => s.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(id).classList.add('active');
+  }
+
+  function showToast(msg, type = 'success') {
+    const t = document.getElementById('toast');
+    t.textContent = (type === 'success' ? '✅ ' : '❌ ') + msg;
+    t.className = `toast ${type} show`;
+    setTimeout(() => t.classList.remove('show'), 3500);
+  }
+
+  async function handleLogin() {
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+    const btn = document.querySelector('#login .btn-primary');
+
+    if (!email || !password) { showToast('Please fill all fields', 'error'); return; }
+
+    btn.textContent = 'Signing in...';
+    btn.classList.add('loading');
+
+    try {
+      const res = await fetch(`${API}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('role', data.role);
+        localStorage.setItem('name', data.name);
+        showToast('Login successful! Redirecting...');
+        setTimeout(() => {
+          window.location.href = data.role === 'admin' ? 'admin.html' : 'dashboard.html';
+        }, 1000);
+      } else {
+        showToast(data.error || 'Login failed', 'error');
+      }
+    } catch(e) {
+      showToast('Cannot connect to server', 'error');
+    } finally {
+      btn.textContent = 'Sign In to SecureBank';
+      btn.classList.remove('loading');
+    }
+  }
+
+  async function handleRegister() {
+    const name = document.getElementById('reg-name').value.trim();
+    const email = document.getElementById('reg-email').value.trim();
+    const phone = document.getElementById('reg-phone').value.trim();
+    const password = document.getElementById('reg-password').value;
+    const btn = document.querySelector('#register .btn-primary');
+
+    if (!name || !email || !phone || !password) { showToast('Please fill all fields', 'error'); return; }
+    if (password.length < 8) { showToast('Password must be at least 8 characters', 'error'); return; }
+
+    btn.textContent = 'Creating account...';
+    btn.classList.add('loading');
+
+    try {
+      const res = await fetch(`${API}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, phone, password })
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        showToast(`Account created! Your number: ${data.account_number}`);
+        setTimeout(() => switchTab('login', document.querySelectorAll('.tab-btn')[0]), 2000);
+      } else {
+        showToast(data.error || 'Registration failed', 'error');
+      }
+    } catch(e) {
+      showToast('Cannot connect to server', 'error');
+    } finally {
+      btn.textContent = 'Create My Account';
+      btn.classList.remove('loading');
+    }
+  }
+
+  // Enter key support
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      const activeTab = document.querySelector('.form-section.active').id;
+      activeTab === 'login' ? handleLogin() : handleRegister();
+    }
+  });
+
+  // If already logged in, redirect
+  if (localStorage.getItem('token')) {
+    window.location.href = localStorage.getItem('role') === 'admin' ? 'admin.html' : 'dashboard.html';
+  }
+</script>
+</body>
+</html>
